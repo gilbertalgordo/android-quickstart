@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Google Inc.
+ * Copyright 2024 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.android.gms.samples.wallet.ui
+package com.google.android.gms.samples.pay.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -28,38 +28,34 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.android.gms.samples.wallet.R
-import com.google.android.gms.samples.wallet.util.PaymentsUtil
-import com.google.android.gms.samples.wallet.viewmodel.CheckoutViewModel
+import com.google.android.gms.samples.pay.R
+import com.google.android.gms.samples.pay.util.PaymentsUtil
+import com.google.android.gms.samples.pay.viewmodel.PaymentUiState
 import com.google.pay.button.PayButton
-import com.google.wallet.button.WalletButton
 
 @Composable
 fun ProductScreen(
-    title:String,
-    description:String,
-    price:String,
-    image:Int,
-    viewModel: CheckoutViewModel,
-    googlePayButtonOnClick: () -> Unit,
-    googleWalletButtonOnClick: () -> Unit,
+    title: String,
+    description: String,
+    price: String,
+    image: Int,
+    onGooglePayButtonClick: () -> Unit,
+    payUiState: PaymentUiState = PaymentUiState.NotStarted,
 ) {
-    val state by viewModel.state.collectAsState()
     val padding = 20.dp
     val black = Color(0xff000000.toInt())
     val grey = Color(0xffeeeeee.toInt())
 
-    if (state.checkoutSuccess) {
+    if (payUiState is PaymentUiState.PaymentCompleted) {
         Column(
             modifier = Modifier
                 .testTag("successScreen")
@@ -77,8 +73,15 @@ fun ProductScreen(
                     .width(200.dp)
                     .height(200.dp)
             )
-            Text(text = "The payment completed successfully.\nWe are preparing your order.")
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = "${payUiState.payerName} completed a payment.\nWe are preparing your order.",
+                fontSize = 17.sp,
+                color = Color.DarkGray,
+                textAlign = TextAlign.Center
+            )
         }
+
     } else {
         Column(
             modifier = Modifier
@@ -111,24 +114,13 @@ fun ProductScreen(
                 text = description,
                 color = black
             )
-            if (state.googlePayAvailable == true) {
+            if (payUiState !is PaymentUiState.NotStarted) {
                 PayButton(
                     modifier = Modifier
                         .testTag("payButton")
                         .fillMaxWidth(),
-                    onClick = { if (state.googlePayButtonClickable) googlePayButtonOnClick() },
+                    onClick = onGooglePayButtonClick,
                     allowedPaymentMethods = PaymentsUtil.allowedPaymentMethods.toString()
-                )
-            }
-            if (state.googleWalletAvailable == true) {
-                Spacer(Modifier)
-                Text(
-                    text = "Or add a pass to your Google Wallet:",
-                    color = black
-                )
-                WalletButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = { if (state.googleWalletButtonClickable) googleWalletButtonOnClick() },
                 )
             }
         }
